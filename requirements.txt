@@ -1,0 +1,25 @@
+# Combined requirements for all OceanPulse modules (Model1DataEngineering + Model1Forecasting).
+# Venv lives at Oceanpulse/.venv — activate with:
+#   source /Users/subhashsrinivasa/Documents/GitHub/Oceanpulse/.venv/bin/activate
+
+# --- Shared ---
+numpy>=1.24
+pandas>=2.0
+
+# --- Model1DataEngineering ---
+xarray>=2023.1
+scipy>=1.10
+requests>=2.28
+matplotlib>=3.7
+zarr>=2.14
+netCDF4>=1.6
+h5netcdf>=1.2
+pyarrow>=14.0
+gsw>=3.6
+argopy>=0.1.14
+copernicusmarine>=1.2
+
+# --- Model1Forecasting ---
+torch>=2.1
+tqdm>=4.65
+pyyaml>=6.0

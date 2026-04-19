@@ -1,0 +1,14 @@
+# Model1Forecasting — install into a venv next to Model1DataEngineering's:
+#   cd Model1Forecasting && python3 -m venv .venv && source .venv/bin/activate
+#   pip install -r requirements.txt
+#
+# torch: install the CUDA build matching your driver, e.g.
+#   pip install --index-url https://download.pytorch.org/whl/cu121 torch
+# The line below is fine on most recent Linux+CUDA systems.
+
+torch>=2.1
+numpy>=1.24
+pandas>=2.0
+tqdm>=4.65
+pyyaml>=6.0
+matplotlib>=3.7
