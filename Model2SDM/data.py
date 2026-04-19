@@ -2,10 +2,11 @@ import numpy as np
 import pandas as pd
 
 from config import (
-    TRAINING_CSV,
     FEATURE_COLUMNS,
-    NON_SPECIES_COLUMNS,
+    LAND_SHAPEFILE,
     MIN_POSITIVES,
+    NON_SPECIES_COLUMNS,
+    TRAINING_CSV,
 )
 
 
@@ -13,6 +14,32 @@ def load_dataset():
     df = pd.read_csv(TRAINING_CSV)
     df["time"] = pd.to_datetime(df["time"], errors="coerce")
     return df
+
+
+def tag_ocean_rows(df):
+    """Add a boolean `is_ocean` column using the 10m Natural Earth land mask.
+
+    Cells whose centre point falls inside a land polygon are marked False.
+    Computes once per unique (lat, lon) pair then merges back.
+    """
+    import geopandas as gpd
+    from shapely.geometry import Point
+
+    land = gpd.read_file(LAND_SHAPEFILE)
+    land_union = land.geometry.union_all()
+
+    cells = df[["lat", "lon"]].drop_duplicates().copy()
+    cells["is_ocean"] = ~cells.apply(
+        lambda r: land_union.contains(Point(r["lon"], r["lat"])), axis=1
+    )
+    return df.merge(cells, on=["lat", "lon"])
+
+
+def filter_ocean_only(df):
+    """Return only rows whose grid-cell centre is in the ocean."""
+    if "is_ocean" not in df.columns:
+        df = tag_ocean_rows(df)
+    return df[df["is_ocean"]].drop(columns=["is_ocean"]).reset_index(drop=True)
 
 
 def split_features_labels(df, min_positives=MIN_POSITIVES):

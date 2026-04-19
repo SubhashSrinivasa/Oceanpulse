@@ -28,6 +28,8 @@ NON_SPECIES_COLUMNS = [
     "salinity", "dissolved_oxygen", "ssh", "day_of_year", "month",
 ]
 
+LAND_SHAPEFILE = Path("c:/Users/peter/AppData/Local/geodatasets/ne_10m_land/ne_10m_land.shp")
+
 MIN_POSITIVES = 20
 RANDOM_STATE = 42
 TEST_FRACTION = 0.2

@@ -26,7 +26,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from config import ARTIFACTS_DIR, MIN_POSITIVES, RANDOM_STATE, TEST_FRACTION
-from data import build_feature_matrix, load_dataset, split_features_labels
+from data import build_feature_matrix, filter_ocean_only, load_dataset, split_features_labels
 
 
 def make_estimator(kind):
@@ -58,6 +58,9 @@ def train(model_kind="logreg", min_positives=MIN_POSITIVES):
     print(f"[train] loading training data...")
     df = load_dataset()
     print(f"[train] rows={len(df):,}  cols={df.shape[1]:,}")
+    print(f"[train] filtering to ocean-only rows (10m land mask)...")
+    df = filter_ocean_only(df)
+    print(f"[train] rows after ocean filter={len(df):,}")
 
     X_raw, Y, species_list, pos_counts = split_features_labels(df, min_positives=min_positives)
     print(f"[train] species with >= {min_positives} positives: {len(species_list)}")

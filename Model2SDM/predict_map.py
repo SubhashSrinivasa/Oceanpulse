@@ -31,7 +31,7 @@ from config import (
     LON_STEP,
     OUTPUTS_DIR,
 )
-from data import build_feature_matrix, load_dataset
+from data import build_feature_matrix, filter_ocean_only, load_dataset
 
 
 def build_grid_background(df, month=None):
@@ -86,7 +86,7 @@ def predict(model_kind="logreg", month=None):
 
     print(f"[predict] loaded {len(estimators)} species models from {bundle_path.name}")
 
-    df = load_dataset()
+    df = filter_ocean_only(load_dataset())
     grid = build_grid_background(df, month=month)
     print(f"[predict] grid cells: {len(grid)}  (month={month})")
 
