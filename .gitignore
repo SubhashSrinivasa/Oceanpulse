@@ -1,3 +1,10 @@
 Model1DataEngineering/data
 Model1DataEngineering/logs
 Model1DataEngineering/outputs
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+Model1Forecasting/data/cache/
+Model1Forecasting/outputs/
+.claude

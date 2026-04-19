@@ -88,7 +88,7 @@ VAL_END = "2021-12-31"
 # --- Training ----------------------------------------------------------------
 TILE_SIZE = 96
 TILE_OCEAN_MIN = 1152          # ~12.5% of 96²=9216; scales with tile area
-BATCH_SIZE = 8                 # 96×96 samples are 2.25× larger than 64×64
+BATCH_SIZE = 4                 # 128 hidden doubles conv memory vs 64; halve batch to stay in 16 GB
 NUM_WORKERS = 0  # data is in RAM — workers only add fork+copy overhead for in-memory datasets
 EPOCHS = 50
 WARMUP_EPOCHS = 2
