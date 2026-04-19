@@ -4,14 +4,19 @@ Budget-locked subset: Central California Upwelling Zone, 2018-2022, 0.25 deg dai
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 # --- Master grid -------------------------------------------------------------
-LAT_MIN, LAT_MAX = 34.0, 42.0
-LON_MIN, LON_MAX = -124.0, -118.0
+# Expanded Pacific bbox (vs original 34-42 N / -124 to -118 W) to produce a
+# ~3-4 GB long-format CSV from the same 0.25 deg daily 2018-2022 window.
+# Cache filenames in data/cache/ do NOT encode the bbox -- wipe that directory
+# (and outputs/ocean_cube.zarr) whenever these bounds change.
+LAT_MIN, LAT_MAX = 20.0, 55.0
+LON_MIN, LON_MAX = -150.0, -110.0
 TIME_START, TIME_END = "2018-01-01", "2022-12-31"
 
 MASTER_LAT = np.arange(LAT_MIN, LAT_MAX + 0.125, 0.25)
@@ -33,6 +38,12 @@ for _p in (RAW_DIR, CACHE_DIR, OUTPUT_DIR, LOG_DIR):
 ZARR_PATH = OUTPUT_DIR / "ocean_cube.zarr"
 QC_REPORT_PATH = OUTPUT_DIR / "data_quality_report.txt"
 MISSING_MAP_PATH = OUTPUT_DIR / "missing_data_map.png"
+
+# --- HTTP downloads (ERDDAP, WOA, etc.) --------------------------------------
+# Parallel independent file fetches (OISST/MODIS per-year, WOA monthly).
+# Set to 1 to force sequential. CMEMS copernicusmarine subset is still one server job.
+DOWNLOAD_MAX_WORKERS = max(1, int(os.environ.get("OCEANPULSE_DOWNLOAD_WORKERS", "4")))
+HTTP_CHUNK_BYTES = int(os.environ.get("OCEANPULSE_HTTP_CHUNK_BYTES", str(4 * 1024 * 1024)))
 
 # --- Physical sanity bounds for QC ------------------------------------------
 SANITY_BOUNDS = {

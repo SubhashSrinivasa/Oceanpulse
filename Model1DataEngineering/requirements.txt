@@ -1,0 +1,17 @@
+# OceanPulse Model1 — install into the project venv:
+#   cd Model1DataEngineering && python3 -m venv .venv && source .venv/bin/activate
+#   pip install -r requirements.txt
+
+numpy>=1.24
+pandas>=2.0
+xarray>=2023.1
+scipy>=1.10
+requests>=2.28
+matplotlib>=3.7
+zarr>=2.14
+netCDF4>=1.6
+h5netcdf>=1.2
+pyarrow>=14.0
+gsw>=3.6
+argopy>=0.1.14
+copernicusmarine>=1.2

@@ -4,6 +4,10 @@ Runs every stage in order, writes ocean_cube.zarr + QC outputs.
 """
 from __future__ import annotations
 
+from ensure_deps import ensure_scientific_stack
+
+ensure_scientific_stack()
+
 from export_csv import main as export_csv
 from pipeline.stage6_assemble import assemble
 from pipeline.stage7_qc import run as run_qc

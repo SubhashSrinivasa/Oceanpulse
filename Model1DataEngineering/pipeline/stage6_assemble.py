@@ -110,6 +110,12 @@ def assemble() -> xr.Dataset:
     if ZARR_PATH.exists():
         import shutil
         shutil.rmtree(ZARR_PATH)
+    # Explicit chunking keeps per-chunk size ~15-40 MB on the expanded bbox
+    # and avoids single-chunk writes for the ~41 M point cube.
+    chunk_time = min(365, master.sizes["time"])
+    chunk_lat = min(50, master.sizes["lat"])
+    chunk_lon = min(50, master.sizes["lon"])
+    master = master.chunk({"time": chunk_time, "lat": chunk_lat, "lon": chunk_lon})
     master.to_zarr(ZARR_PATH, mode="w", consolidated=True)
     log.info("Zarr written. Shape=%s", dict(master.sizes))
     return master

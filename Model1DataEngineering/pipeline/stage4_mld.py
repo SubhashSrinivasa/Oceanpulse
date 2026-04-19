@@ -12,6 +12,7 @@ mld_source flag: 0 = Argo interp, 1 = WOA23, 2 = constant fallback.
 from __future__ import annotations
 
 import warnings
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import numpy as np
@@ -21,6 +22,8 @@ import xarray as xr
 
 from .config import (
     CACHE_DIR,
+    DOWNLOAD_MAX_WORKERS,
+    HTTP_CHUNK_BYTES,
     LAT_MAX,
     LAT_MIN,
     LON_MAX,
@@ -195,19 +198,52 @@ def _mld_from_woa23() -> xr.DataArray | None:
     base = "https://www.ncei.noaa.gov/data/oceans/woa/WOA18/DATA/mld/netcdf/decav81B0/1.00"
     monthly = []
     try:
+
+        def _fetch_woa_month(mm: int, out: Path, url: str) -> bool:
+            log.info("Downloading WOA18 MLD month %02d", mm)
+            r = requests.get(url, timeout=120, stream=True)
+            if r.status_code != 200:
+                log.error("WOA18 month %d HTTP %s", mm, r.status_code)
+                return False
+            with open(out, "wb") as f:
+                for chunk in r.iter_content(chunk_size=HTTP_CHUNK_BYTES):
+                    if chunk:
+                        f.write(chunk)
+            return True
+
+        to_fetch = []
         for mm in range(1, 13):
             out = CACHE_DIR / f"woa18_mld_{mm:02d}.nc"
             if not out.exists():
                 url = f"{base}/woa18_decav81B0_M02{mm:02d}_01.nc"
-                log.info("Downloading WOA18 MLD month %02d", mm)
-                r = requests.get(url, timeout=120, stream=True)
-                if r.status_code != 200:
-                    log.error("WOA18 month %d HTTP %s", mm, r.status_code)
-                    return None
-                with open(out, "wb") as f:
-                    for chunk in r.iter_content(chunk_size=1 << 20):
-                        if chunk:
-                            f.write(chunk)
+                to_fetch.append((mm, out, url))
+
+        if to_fetch:
+            n_workers = min(DOWNLOAD_MAX_WORKERS, len(to_fetch))
+            log.info(
+                "WOA18 MLD: downloading %d missing month(s) in parallel (max_workers=%d)",
+                len(to_fetch),
+                n_workers,
+            )
+            ok_any_fail = False
+            with ThreadPoolExecutor(max_workers=n_workers) as ex:
+                futures = {
+                    ex.submit(_fetch_woa_month, mm, out, url): mm
+                    for mm, out, url in to_fetch
+                }
+                for fut in as_completed(futures):
+                    mm = futures[fut]
+                    try:
+                        if not fut.result():
+                            ok_any_fail = True
+                    except Exception as exc:  # noqa: BLE001
+                        log.error("WOA18 month %d download error: %s", mm, exc)
+                        ok_any_fail = True
+            if ok_any_fail:
+                return None
+
+        for mm in range(1, 13):
+            out = CACHE_DIR / f"woa18_mld_{mm:02d}.nc"
             monthly.append(out)
         log.info("WOA18 monthly downloads complete")
 

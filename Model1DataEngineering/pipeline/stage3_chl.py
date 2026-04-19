@@ -7,6 +7,7 @@ from 8-day to daily (nearest) and apply a max-gap interpolation.
 from __future__ import annotations
 
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import numpy as np
@@ -16,6 +17,8 @@ import xarray as xr
 
 from .config import (
     CACHE_DIR,
+    DOWNLOAD_MAX_WORKERS,
+    HTTP_CHUNK_BYTES,
     LAT_MAX,
     LAT_MIN,
     LON_MAX,
@@ -95,7 +98,7 @@ def _download_year(year: int, dest: Path, retries: int = 3) -> bool:
                 time.sleep(3 * attempt)
                 continue
             with open(dest, "wb") as f:
-                for chunk in r.iter_content(chunk_size=1 << 20):
+                for chunk in r.iter_content(chunk_size=HTTP_CHUNK_BYTES):
                     if chunk:
                         f.write(chunk)
             log.info("Saved %s (%.2f MB)", dest.name, dest.stat().st_size / 1e6)
@@ -120,14 +123,37 @@ def _nan_chl() -> xr.DataArray:
 
 def fetch_chl() -> xr.Dataset:
     annual_files = []
+    missing = [
+        (y, CACHE_DIR / f"modis_chl_{y}.nc")
+        for y in YEARS
+        if not (CACHE_DIR / f"modis_chl_{y}.nc").exists()
+    ]
+    if missing:
+        n_workers = min(DOWNLOAD_MAX_WORKERS, len(missing))
+        log.info(
+            "MODIS CHL: downloading %d missing year(s) in parallel (max_workers=%d)",
+            len(missing),
+            n_workers,
+        )
+        with ThreadPoolExecutor(max_workers=n_workers) as ex:
+            futures = {
+                ex.submit(_download_year, y, path): y for y, path in missing
+            }
+            for fut in as_completed(futures):
+                y = futures[fut]
+                try:
+                    ok = fut.result()
+                    if not ok:
+                        log.error("MODIS CHL %s failed", y)
+                except Exception as exc:  # noqa: BLE001
+                    log.error("MODIS CHL %s failed: %s", y, exc)
+
     for year in YEARS:
         dest = CACHE_DIR / f"modis_chl_{year}.nc"
-        if not dest.exists():
-            ok = _download_year(year, dest)
-            if not ok:
-                log.error("MODIS CHL %s failed", year)
-                continue
-        annual_files.append(dest)
+        if dest.exists():
+            annual_files.append(dest)
+        else:
+            log.error("Missing MODIS CHL file for year %s — skipping", year)
 
     if not annual_files:
         log.error("No MODIS CHL files — full NaN chlorophyll")
