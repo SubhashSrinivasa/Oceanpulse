@@ -1,0 +1,9 @@
+{
+  "n_species": 369,
+  "n_logistic_models": 241,
+  "n_baseline_models": 128,
+  "min_positives_for_logistic_model": 25,
+  "median_positive_count": 45.0,
+  "median_average_precision_logistic": 0.03108720167358131,
+  "median_roc_auc_logistic": 0.8505323505323505
+}
